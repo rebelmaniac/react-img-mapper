@@ -34,15 +34,8 @@ const Example: React.FC = () => {
           name: 'my-map',
           areas,
         }}
-        responsive
-        parentWidth={500}
         stayHighlighted
-        stayMultiHighlighted
         toggleHighlighted
-        fillColor="red"
-        strokeColor="black"
-        lineWidth={8}
-        onLoad={(e, dimensions) => console.log(e, dimensions)}
       />
       <button type="button" onClick={handleClick}>
         Hello
