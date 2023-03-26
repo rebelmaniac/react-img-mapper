@@ -83,96 +83,121 @@ const ImageMapper: FC<ImageMapperProps> = props => {
   const ctx = useRef<CanvasRenderingContext2D | null>(null);
   const isInitialMount = useRef<boolean>(true);
 
-  const scaleCoords = (coords: number[]): number[] => {
-    const scale =
-      widthProp && imageWidthProp && imageWidthProp > 0
-        ? (widthProp as number) / imageWidthProp
-        : 1;
+  const scaleCoords = useCallback(
+    (coords: number[]): number[] => {
+      const scale =
+        widthProp && imageWidthProp && imageWidthProp > 0
+          ? (widthProp as number) / imageWidthProp
+          : 1;
 
-    return coords.map(coord =>
-      responsive && parentWidth && imgRef
-        ? coord / (imgRef.naturalWidth / parentWidth)
-        : coord * scale
-    );
-  };
-
-  const renderPrefilledAreas = (mapObj: Map = map): boolean[] =>
-    mapObj.areas.map(area => {
-      if (!area.preFillColor) return false;
-
-      callingFn(
-        area.shape,
-        scaleCoords(area.coords),
-        area.preFillColor,
-        area.lineWidth ?? lineWidthProp,
-        area.strokeColor ?? strokeColorProp,
-        true,
-        ctx.current
+      return coords.map(coord =>
+        responsive && parentWidth && imgRef
+          ? coord / (imgRef.naturalWidth / parentWidth)
+          : coord * scale
       );
-      return true;
-    });
+    },
+    [imageWidthProp, imgRef, parentWidth, responsive, widthProp]
+  );
 
-  const getDimensions = (type: 'width' | 'height'): number => {
-    const { [type]: dimension } = props;
+  const renderPrefilledAreas = useCallback(
+    (mapObj: Map = map): boolean[] =>
+      mapObj.areas.map(area => {
+        if (!area.preFillColor) return false;
 
-    if (img.current && typeof dimension === 'function') {
-      return dimension(img.current);
-    }
-    return dimension as number;
-  };
+        callingFn(
+          area.shape,
+          scaleCoords(area.coords),
+          area.preFillColor,
+          area.lineWidth ?? lineWidthProp,
+          area.strokeColor ?? strokeColorProp,
+          true,
+          ctx.current
+        );
+        return true;
+      }),
+    [lineWidthProp, map, scaleCoords, strokeColorProp]
+  );
 
-  const getValues = (type: string, measure: number, name = 'area'): number => {
-    if (!img.current) return 0;
+  const getDimensions = useCallback(
+    (type: 'width' | 'height'): number => {
+      const dimension = type === 'width' ? widthProp : heightProp;
 
-    const { naturalWidth, naturalHeight, clientWidth, clientHeight } = img.current;
+      if (img.current && typeof dimension === 'function') {
+        return dimension(img.current);
+      }
+      return dimension as number;
+    },
+    [widthProp, heightProp]
+  );
 
-    if (type === 'width') {
-      if (responsive) return parentWidth;
-      if (natural) return naturalWidth;
-      if (widthProp || name === 'image') return measure;
-      return clientWidth;
-    }
-    if (type === 'height') {
-      if (responsive) return clientHeight;
-      if (natural) return naturalHeight;
-      if (heightProp || name === 'image') return measure;
-      return clientHeight;
-    }
-    return 0;
-  };
+  const getValues = useCallback(
+    (type: string, measure: number, name = 'area'): number => {
+      if (!img.current) return 0;
 
-  const initCanvas = (firstLoad = false): void => {
-    if (!firstLoad && !imgRef) return;
-    if (!img.current || !canvas.current || !container.current) return;
+      const { naturalWidth, naturalHeight, clientWidth, clientHeight } = img.current;
 
-    const imgWidth = getDimensions('width');
-    const imgHeight = getDimensions('height');
-    const imageWidth = getValues('width', imgWidth);
-    const imageHeight = getValues('height', imgHeight);
+      if (type === 'width') {
+        if (responsive) return parentWidth;
+        if (natural) return naturalWidth;
+        if (widthProp || name === 'image') return measure;
+        return clientWidth;
+      }
+      if (type === 'height') {
+        if (responsive) return clientHeight;
+        if (natural) return naturalHeight;
+        if (heightProp || name === 'image') return measure;
+        return clientHeight;
+      }
+      return 0;
+    },
+    [heightProp, natural, parentWidth, responsive, widthProp]
+  );
 
-    if (widthProp || responsive) {
-      img.current.width = getValues('width', imgWidth, 'image');
-    }
+  const initCanvas = useCallback(
+    (firstLoad = false): void => {
+      if (!firstLoad && !imgRef) return;
+      if (!img.current || !canvas.current || !container.current) return;
 
-    if (heightProp || responsive) {
-      img.current.height = getValues('height', imgHeight, 'image');
-    }
+      const imgWidth = getDimensions('width');
+      const imgHeight = getDimensions('height');
+      const imageWidth = getValues('width', imgWidth);
+      const imageHeight = getValues('height', imgHeight);
 
-    canvas.current.width = imageWidth;
-    canvas.current.height = imageHeight;
-    container.current.style.width = `${imageWidth}px`;
-    container.current.style.height = `${imageHeight}px`;
+      if (widthProp || responsive) {
+        img.current.width = getValues('width', imgWidth, 'image');
+      }
 
-    ctx.current = canvas.current.getContext('2d') as CanvasRenderingContext2D;
-    ctx.current.fillStyle = fillColorProp;
+      if (heightProp || responsive) {
+        img.current.height = getValues('height', imgHeight, 'image');
+      }
 
-    if (onLoad && imgRef) {
-      onLoad(img.current, { width: imageWidth, height: imageHeight });
-    }
+      canvas.current.width = imageWidth;
+      canvas.current.height = imageHeight;
+      container.current.style.width = `${imageWidth}px`;
+      container.current.style.height = `${imageHeight}px`;
 
-    setImgRef(img.current);
-    if (imgRef) renderPrefilledAreas();
-  };
+      ctx.current = canvas.current.getContext('2d') as CanvasRenderingContext2D;
+      ctx.current.fillStyle = fillColorProp;
+
+      if (onLoad && imgRef) {
+        onLoad(img.current, { width: imageWidth, height: imageHeight });
+      }
+
+      setImgRef(img.current);
+      if (imgRef) renderPrefilledAreas();
+    },
+    [
+      fillColorProp,
+      getDimensions,
+      getValues,
+      heightProp,
+      imgRef,
+      onLoad,
+      renderPrefilledAreas,
+      responsive,
+      widthProp,
+    ]
+  );
 
   const highlightArea = (area: Area): boolean =>
     callingFn(
@@ -191,10 +216,10 @@ const ImageMapper: FC<ImageMapperProps> = props => {
     ctx.current.clearRect(0, 0, canvas.current.width, canvas.current.height);
   };
 
-  const updateCanvas = (): void => {
+  const updateCanvas = useCallback((): void => {
     clearCanvas();
     renderPrefilledAreas(mapProp);
-  };
+  }, [mapProp, renderPrefilledAreas]);
 
   const hoverOn: EventFC = ({ area, index, event }) => {
     if (active) highlightArea(area);
@@ -284,7 +309,7 @@ const ImageMapper: FC<ImageMapperProps> = props => {
         setRenderCount(prev => prev + 1);
       }
     }
-  }, [img, isRendered, renderCount]);
+  }, [img, initCanvas, isRendered, renderCount, updateCacheMap]);
 
   useEffect(() => {
     if (isInitialMount.current) {
@@ -294,24 +319,24 @@ const ImageMapper: FC<ImageMapperProps> = props => {
       initCanvas();
       if (imgRef) updateCanvas();
     }
-  }, [props, isInitialMount, imgRef]);
+  }, [isInitialMount, imgRef, updateCacheMap]);
 
   useEffect(() => {
     if (!container.current) return;
 
     container.current.clearHighlightedArea = (): void => {
       setMap(storedMap);
-      initCanvas();
+      updateCanvas();
     };
 
     if (containerRef) {
       containerRef.current = container.current;
     }
-  }, [imgRef]);
+  }, [containerRef, imgRef, storedMap]);
 
   useEffect(() => {
     if (responsive) initCanvas();
-  }, [parentWidth]);
+  }, [parentWidth, responsive]);
 
   const renderAreas = (): ReactNode =>
     map.areas.map((mapArea, index) => {

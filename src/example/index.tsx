@@ -37,13 +37,15 @@ const Example: React.FC = () => {
           name: 'my-map',
           areas,
         }}
-        active={false}
         onClick={() => {
           console.log('imagew');
         }}
-        onImageClick={() => console.log('lol')}
+        // onImageClick={() => console.log('lol')}
         stayHighlighted
+        stayMultiHighlighted
         toggleHighlighted
+        responsive
+        parentWidth={1000}
       />
       <button type="button" onClick={handleClick}>
         Hello
