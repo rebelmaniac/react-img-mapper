@@ -1,10 +1,14 @@
-import React from 'react';
+import type {
+  MutableRefObject,
+  MouseEvent as ReactMouseEvent,
+  TouchEvent as ReactTouchEvent,
+} from 'react';
 
-export interface Container extends HTMLDivElement {
+export interface ContainerRef extends HTMLDivElement {
   clearHighlightedArea: () => void;
 }
 
-export interface MapAreas {
+export interface MapArea {
   id?: string;
   shape: string;
   coords: number[];
@@ -19,49 +23,77 @@ export interface MapAreas {
 
 export interface Map {
   name: string;
-  areas: Array<MapAreas>;
+  areas: MapArea[];
 }
 
-export interface CustomArea extends MapAreas {
+export interface Area extends MapArea {
   scaledCoords: number[];
-  center?: [number, number];
+  center: [number, number];
 }
 
-export type CTX = { current: CanvasRenderingContext2D } | null;
-export type TouchEvent = React.TouchEvent<HTMLAreaElement>;
-export type AreaEvent = React.MouseEvent<HTMLAreaElement, MouseEvent>;
-export type ImageEvent = React.MouseEvent<HTMLImageElement, MouseEvent>;
+export type TouchEvent = ReactTouchEvent<HTMLAreaElement>;
+export type AreaEvent = ReactMouseEvent<HTMLAreaElement>;
+export type ImageEvent = ReactMouseEvent<HTMLImageElement>;
+export type Dimension = number | ((e: HTMLImageElement) => number);
+
+export interface EventFC<T = EventProps> {
+  (data: T): void;
+}
+
+export type ImageEventHandler = ((event: ImageEvent) => void) | null;
+
+export interface ImageEventProps {
+  event: ImageEvent;
+}
+
+export type EventHandler<T = AreaEvent> = ((area: Area, index: number, e: T) => void) | null;
+
+export interface EventProps<T = AreaEvent> {
+  area: Area;
+  index: number;
+  event: T;
+}
+
+export type LoadEventHandler =
+  | ((e: HTMLImageElement, dimensions: { width: number; height: number }) => void)
+  | null;
 
 export interface ImageMapperProps {
   src: string;
-  map?: Map;
+  map: Map;
   areaKeyName?: 'id';
-  containerRef?: { current: HTMLDivElement } | null;
+  containerRef?: MutableRefObject<ContainerRef | null> | null;
   active?: boolean;
   disabled?: boolean;
   fillColor?: string;
   strokeColor?: string;
   lineWidth?: number;
   imgWidth?: number;
-  width?: number | ((e: React.MouseEvent<HTMLImageElement>) => void);
-  height?: number | ((e: React.MouseEvent<HTMLImageElement>) => void);
+  width?: Dimension;
+  height?: Dimension;
   natural?: boolean;
   stayHighlighted?: boolean;
   stayMultiHighlighted?: boolean;
   toggleHighlighted?: boolean;
-  rerenderProps?: Array<keyof ImageMapperProps>;
+  rerenderProps?: (keyof ImageMapperProps)[];
   responsive?: boolean;
   parentWidth?: number;
-
-  onImageClick?: ((e: ImageEvent) => void) | null;
-  onImageMouseMove?: ((e: ImageEvent) => void) | null;
-  onClick?: ((area: CustomArea, index: number, e: AreaEvent) => void) | null;
-  onMouseDown?: ((area: CustomArea, index: number, e: AreaEvent) => void) | null;
-  onMouseUp?: ((area: CustomArea, index: number, e: AreaEvent) => void) | null;
-  onTouchStart?: ((area: CustomArea, index: number, e: TouchEvent) => void) | null;
-  onTouchEnd?: ((area: CustomArea, index: number, e: TouchEvent) => void) | null;
-  onMouseMove?: ((area: CustomArea, index: number, e: AreaEvent) => void) | null;
-  onMouseEnter?: ((area: CustomArea, index: number, e: AreaEvent) => void) | null;
-  onMouseLeave?: ((area: CustomArea, index: number, e: AreaEvent) => void) | null;
-  onLoad?: ((e: HTMLImageElement, dimensions: { width: number; height: number }) => void) | null;
+  onImageClick?: ImageEventHandler;
+  onImageMouseMove?: ImageEventHandler;
+  onClick?: EventHandler;
+  onMouseDown?: EventHandler;
+  onMouseUp?: EventHandler;
+  onTouchStart?: EventHandler<TouchEvent>;
+  onTouchEnd?: EventHandler<TouchEvent>;
+  onMouseMove?: EventHandler;
+  onMouseEnter?: EventHandler;
+  onMouseLeave?: EventHandler;
+  onLoad?: LoadEventHandler;
 }
+
+// eslint-disable-next-line @typescript-eslint/no-type-alias
+type PrefixType<T, P extends string> = {
+  [K in keyof T as K extends string ? `${P}${Capitalize<K>}` : never]: T[K];
+};
+
+export type ImagePropsWithDPrefix = PrefixType<Required<ImageMapperProps>, 'D'>;

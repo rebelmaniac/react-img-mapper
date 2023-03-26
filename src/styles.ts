@@ -1,32 +1,31 @@
-import React from 'react';
-import { ImageMapperProps } from './types';
+import type { ImageMapperProps } from '@/types';
+import type { CSSProperties } from 'react';
 
-const absPos: React.CSSProperties = {
+interface StylesProps {
+  container: CSSProperties;
+  canvas: CSSProperties;
+  img: CSSProperties;
+}
+
+const absPos: CSSProperties = {
   position: 'absolute',
   top: 0,
   left: 0,
 };
 
-const imgNonResponsive: React.CSSProperties = {
+const imgNonResponsive: CSSProperties = {
   ...absPos,
   zIndex: 1,
   userSelect: 'none',
 };
 
-const imgResponsive: React.CSSProperties = {
+const imgResponsive: CSSProperties = {
   ...imgNonResponsive,
   width: '100%',
   height: 'auto',
 };
 
-interface StylesProps {
-  container: React.CSSProperties;
-  canvas: React.CSSProperties;
-  img: React.CSSProperties;
-  map: React.CSSProperties | undefined;
-}
-
-const styles = (props?: Partial<ImageMapperProps>): StylesProps => ({
+const styles = ({ responsive }: Pick<ImageMapperProps, 'responsive'>): StylesProps => ({
   container: {
     position: 'relative',
   },
@@ -35,12 +34,7 @@ const styles = (props?: Partial<ImageMapperProps>): StylesProps => ({
     pointerEvents: 'none',
     zIndex: 2,
   },
-  img: props?.responsive ? imgResponsive : imgNonResponsive,
-  map:
-    (props?.onClick && {
-      cursor: 'pointer',
-    }) ||
-    undefined,
+  img: responsive ? imgResponsive : imgNonResponsive,
 });
 
 export default styles;

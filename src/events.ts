@@ -1,57 +1,39 @@
-import { ImageMapperProps, CustomArea, AreaEvent, TouchEvent, ImageEvent } from './types';
+import type { EventProps, ImageEventProps, ImageMapperProps, TouchEvent } from '@/types';
 
-export const imageMouseMove = (event: ImageEvent, props: ImageMapperProps): void => {
-  if (props.onImageMouseMove) props.onImageMouseMove(event);
+interface EventFC<T = EventProps> {
+  (data: T, props: ImageMapperProps): void;
+}
+
+export const imageMouseMove: EventFC<ImageEventProps> = ({ event }, { onImageMouseMove }) => {
+  if (onImageMouseMove) onImageMouseMove(event);
 };
 
-export const imageClick = (event: ImageEvent, props: ImageMapperProps): void => {
-  if (props.onImageClick) {
-    event.preventDefault();
-    props.onImageClick(event);
-  }
+export const imageClick: EventFC<ImageEventProps> = ({ event }, { onImageClick }) => {
+  if (onImageClick) onImageClick(event);
 };
 
-export const mouseMove = (
-  area: CustomArea,
-  index: number,
-  event: AreaEvent,
-  props: ImageMapperProps
-): void => {
-  if (props.onMouseMove) props.onMouseMove(area, index, event);
+export const mouseMove: EventFC = ({ area, index, event }, { onMouseMove }) => {
+  if (onMouseMove) onMouseMove(area, index, event);
 };
 
-export const mouseDown = (
-  area: CustomArea,
-  index: number,
-  event: AreaEvent,
-  props: ImageMapperProps
-): void => {
-  if (props.onMouseDown) props.onMouseDown(area, index, event);
+export const mouseDown: EventFC = ({ area, index, event }, { onMouseDown }) => {
+  if (onMouseDown) onMouseDown(area, index, event);
 };
 
-export const mouseUp = (
-  area: CustomArea,
-  index: number,
-  event: AreaEvent,
-  props: ImageMapperProps
-): void => {
-  if (props.onMouseUp) props.onMouseUp(area, index, event);
+export const mouseUp: EventFC = ({ area, index, event }, { onMouseUp }) => {
+  if (onMouseUp) onMouseUp(area, index, event);
 };
 
-export const touchStart = (
-  area: CustomArea,
-  index: number,
-  event: TouchEvent,
-  props: ImageMapperProps
-): void => {
-  if (props.onTouchStart) props.onTouchStart(area, index, event);
+export const touchStart: EventFC<EventProps<TouchEvent>> = (
+  { area, index, event },
+  { onTouchStart }
+) => {
+  if (onTouchStart) onTouchStart(area, index, event);
 };
 
-export const touchEnd = (
-  area: CustomArea,
-  index: number,
-  event: TouchEvent,
-  props: ImageMapperProps
-): void => {
-  if (props.onTouchEnd) props.onTouchEnd(area, index, event);
+export const touchEnd: EventFC<EventProps<TouchEvent>> = (
+  { area, index, event },
+  { onTouchEnd }
+) => {
+  if (onTouchEnd) onTouchEnd(area, index, event);
 };

@@ -1,6 +1,9 @@
-import React, { useState, useRef } from 'react';
-import ImageMapper, { MapAreas } from '../ImageMapper';
+import React, { useRef, useState } from 'react';
+
 import JSON from './area.json';
+import ImageMapper from '../ImageMapper';
+
+import type { ContainerRef, MapArea } from '../ImageMapper';
 
 const URL = 'https://raw.githubusercontent.com/img-mapper/react-docs/master/src/assets/example.jpg';
 
@@ -8,11 +11,11 @@ const URL = 'https://raw.githubusercontent.com/img-mapper/react-docs/master/src/
 //   'https://raw.githubusercontent.com/img-mapper/react-docs/master/src/assets/example.json';
 
 const Example: React.FC = () => {
-  const [areas, setAreas] = useState<Array<MapAreas>>(JSON);
-  const ref = useRef(null);
+  const [areas, setAreas] = useState<MapArea[]>(JSON);
+  const ref = useRef<ContainerRef>(null);
 
   const handleClick = () => {
-    const area = areas.map((cur: MapAreas, i: number) => {
+    const area = areas.map((cur: MapArea, i: number) => {
       if (i % 4 === 0) {
         const temp = { ...cur };
         temp.preFillColor = 'red';
@@ -26,7 +29,7 @@ const Example: React.FC = () => {
   if (!areas.length) return null;
 
   return (
-    <React.Fragment>
+    <>
       <ImageMapper
         src={URL}
         containerRef={ref}
@@ -34,16 +37,21 @@ const Example: React.FC = () => {
           name: 'my-map',
           areas,
         }}
+        active={false}
+        onClick={() => {
+          console.log('imagew');
+        }}
+        onImageClick={() => console.log('lol')}
         stayHighlighted
         toggleHighlighted
       />
       <button type="button" onClick={handleClick}>
         Hello
       </button>
-      <button type="button" onClick={() => ref.current.clearHighlightedArea()}>
+      <button type="button" onClick={() => ref?.current?.clearHighlightedArea()}>
         Clear
       </button>
-    </React.Fragment>
+    </>
   );
 };
 

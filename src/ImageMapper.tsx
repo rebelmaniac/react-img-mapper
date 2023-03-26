@@ -1,61 +1,91 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
 import isEqual from 'react-fast-compare';
-import styles from './styles';
-import { Map, Container, MapAreas, CustomArea, AreaEvent, ImageMapperProps } from './types';
-import { rerenderPropsList, ImageMapperDefaultProps } from './constants';
-import callingFn from './draw';
+
+import { imageMapperDefaultProps, rerenderPropsList } from '@/constants';
+import callingFn from '@/draw';
 import {
-  mouseMove,
-  imageMouseMove,
   imageClick,
+  imageMouseMove,
   mouseDown,
+  mouseMove,
   mouseUp,
-  touchStart,
   touchEnd,
-} from './events';
+  touchStart,
+} from '@/events';
+import styles from '@/styles';
 
-export * from './types';
+import type { Area, ContainerRef, EventFC, ImageMapperProps, Map, MapArea } from '@/types';
+import type { FC, ReactNode } from 'react';
 
-const ImageMapper: React.FC<ImageMapperProps> = (props: ImageMapperProps) => {
+export type * from '@/types';
+
+// eslint-disable-next-line react/function-component-definition
+const ImageMapper: FC<ImageMapperProps> = props => {
   const {
-    containerRef,
-    active,
-    disabled,
-    fillColor: fillColorProp,
-    lineWidth: lineWidthProp,
-    map: mapProp,
+    DAreaKeyName,
+    DContainerRef,
+    DActive,
+    DDisabled,
+    DFillColor,
+    DStrokeColor,
+    DLineWidth,
+    DImgWidth,
+    DWidth,
+    DHeight,
+    DNatural,
+    DStayHighlighted,
+    DStayMultiHighlighted,
+    DToggleHighlighted,
+    DResponsive,
+    DParentWidth,
+
+    DOnClick,
+    DOnMouseEnter,
+    DOnMouseLeave,
+    DOnLoad,
+  } = imageMapperDefaultProps;
+
+  const {
     src: srcProp,
-    strokeColor: strokeColorProp,
-    natural,
-    height: heightProp,
-    width: widthProp,
-    imgWidth: imageWidthProp,
-    areaKeyName,
-    stayHighlighted,
-    stayMultiHighlighted,
-    toggleHighlighted,
-    parentWidth,
-    responsive,
-    onLoad,
-    onMouseEnter,
-    onMouseLeave,
-    onClick,
+    map: mapProp,
+    areaKeyName = DAreaKeyName,
+    containerRef = DContainerRef,
+    active = DActive,
+    disabled = DDisabled,
+    fillColor: fillColorProp = DFillColor,
+    strokeColor: strokeColorProp = DStrokeColor,
+    lineWidth: lineWidthProp = DLineWidth,
+    imgWidth: imageWidthProp = DImgWidth,
+    width: widthProp = DWidth,
+    height: heightProp = DHeight,
+    natural = DNatural,
+    stayHighlighted = DStayHighlighted,
+    stayMultiHighlighted = DStayMultiHighlighted,
+    toggleHighlighted = DToggleHighlighted,
+    parentWidth = DParentWidth,
+    responsive = DResponsive,
+
+    onClick = DOnClick,
+    onMouseEnter = DOnMouseEnter,
+    onMouseLeave = DOnMouseLeave,
+    onLoad = DOnLoad,
   } = props;
 
   const [map, setMap] = useState<Map>(mapProp);
   const [storedMap, setStoredMap] = useState<Map>(map);
   const [isRendered, setRendered] = useState<boolean>(false);
   const [renderCount, setRenderCount] = useState<number>(1);
-  const [imgRef, setImgRef] = useState<HTMLImageElement>(null);
-  const container = useRef<Container>(null);
-  const img = useRef<HTMLImageElement>(null);
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const ctx = useRef<CanvasRenderingContext2D>(null);
+  const [imgRef, setImgRef] = useState<HTMLImageElement | null>(null);
+  const container = useRef<ContainerRef | null>(null);
+  const img = useRef<HTMLImageElement | null>(null);
+  const canvas = useRef<HTMLCanvasElement | null>(null);
+  const ctx = useRef<CanvasRenderingContext2D | null>(null);
   const isInitialMount = useRef<boolean>(true);
 
   useEffect(() => {
     if (!isRendered && renderCount) {
-      if (img.current && img.current.complete) {
+      if (img.current?.complete && canvas.current) {
         initCanvas(true);
         ctx.current = canvas.current.getContext('2d');
         updateCacheMap();
@@ -78,7 +108,9 @@ const ImageMapper: React.FC<ImageMapperProps> = (props: ImageMapperProps) => {
   }, [props, isInitialMount, imgRef]);
 
   useEffect(() => {
-    container.current.clearHighlightedArea = () => {
+    if (!container.current) return;
+
+    container.current.clearHighlightedArea = (): void => {
       setMap(storedMap);
       initCanvas();
     };
@@ -92,22 +124,23 @@ const ImageMapper: React.FC<ImageMapperProps> = (props: ImageMapperProps) => {
     if (responsive) initCanvas();
   }, [parentWidth]);
 
-  const updateCacheMap = () => {
+  const updateCacheMap = useCallback(() => {
     setMap(mapProp);
     setStoredMap(mapProp);
-  };
+  }, [mapProp]);
 
   const getDimensions = (type: 'width' | 'height'): number => {
     const { [type]: dimension } = props;
 
-    if (typeof dimension === 'function') {
-      // @ts-ignore
+    if (img.current && typeof dimension === 'function') {
       return dimension(img.current);
     }
     return dimension as number;
   };
 
-  const getValues = (type: string, measure: number, name = 'area') => {
+  const getValues = (type: string, measure: number, name = 'area'): number => {
+    if (!img.current) return 0;
+
     const { naturalWidth, naturalHeight, clientWidth, clientHeight } = img.current;
 
     if (type === 'width') {
@@ -125,8 +158,9 @@ const ImageMapper: React.FC<ImageMapperProps> = (props: ImageMapperProps) => {
     return 0;
   };
 
-  const initCanvas = (firstLoad = false) => {
+  const initCanvas = (firstLoad = false): void => {
     if (!firstLoad && !imgRef) return;
+    if (!img.current || !canvas.current || !container.current) return;
 
     const imgWidth = getDimensions('width');
     const imgHeight = getDimensions('height');
@@ -146,41 +180,40 @@ const ImageMapper: React.FC<ImageMapperProps> = (props: ImageMapperProps) => {
     container.current.style.width = `${imageWidth}px`;
     container.current.style.height = `${imageHeight}px`;
 
-    ctx.current = canvas.current.getContext('2d');
+    ctx.current = canvas.current.getContext('2d') as CanvasRenderingContext2D;
     ctx.current.fillStyle = fillColorProp;
 
     if (onLoad && imgRef) {
-      onLoad(img.current, {
-        width: imageWidth,
-        height: imageHeight,
-      });
+      onLoad(img.current, { width: imageWidth, height: imageHeight });
     }
 
     setImgRef(img.current);
     if (imgRef) renderPrefilledAreas();
   };
 
-  const highlightArea = (area: CustomArea) =>
+  const highlightArea = (area: Area): boolean =>
     callingFn(
       area.shape,
       area.scaledCoords,
-      area.fillColor || fillColorProp,
-      area.lineWidth || lineWidthProp,
-      area.strokeColor || strokeColorProp,
+      area.fillColor ?? fillColorProp,
+      area.lineWidth ?? lineWidthProp,
+      area.strokeColor ?? strokeColorProp,
       area.active ?? true,
-      ctx
+      ctx.current
     );
 
-  const clearCanvas = () =>
+  const clearCanvas = (): void => {
+    if (!ctx.current || !canvas.current) return;
+
     ctx.current.clearRect(0, 0, canvas.current.width, canvas.current.height);
+  };
 
-  const hoverOn = (area: CustomArea, index?: number, event?: AreaEvent) => {
+  const hoverOn: EventFC = ({ area, index, event }) => {
     if (active) highlightArea(area);
-
     if (onMouseEnter) onMouseEnter(area, index, event);
   };
 
-  const hoverOff = (area: CustomArea, index: number, event: AreaEvent) => {
+  const hoverOff: EventFC = ({ area, index, event }) => {
     if (active) {
       clearCanvas();
       renderPrefilledAreas();
@@ -189,7 +222,7 @@ const ImageMapper: React.FC<ImageMapperProps> = (props: ImageMapperProps) => {
     if (onMouseLeave) onMouseLeave(area, index, event);
   };
 
-  const click = (area: CustomArea, index: number, event: AreaEvent) => {
+  const click: EventFC = ({ area, index, event }) => {
     const isAreaActive = area.active ?? true;
 
     if (isAreaActive && (stayHighlighted || stayMultiHighlighted || toggleHighlighted)) {
@@ -205,7 +238,7 @@ const ImageMapper: React.FC<ImageMapperProps> = (props: ImageMapperProps) => {
           delete newArea.preFillColor;
         }
       } else if (stayHighlighted || stayMultiHighlighted) {
-        newArea.preFillColor = area.fillColor || fillColorProp;
+        newArea.preFillColor = area.fillColor ?? fillColorProp;
       }
 
       const updatedAreas = chosenArea.areas.map(cur =>
@@ -230,29 +263,31 @@ const ImageMapper: React.FC<ImageMapperProps> = (props: ImageMapperProps) => {
       widthProp && imageWidthProp && imageWidthProp > 0
         ? (widthProp as number) / imageWidthProp
         : 1;
-    if (responsive && parentWidth) {
-      return coords.map(coord => coord / (imgRef.naturalWidth / parentWidth));
-    }
-    return coords.map(coord => coord * scale);
+
+    return coords.map(coord =>
+      responsive && parentWidth && imgRef
+        ? coord / (imgRef.naturalWidth / parentWidth)
+        : coord * scale
+    );
   };
 
-  const renderPrefilledAreas = (mapObj: Map = map) => {
-    mapObj.areas.forEach(area => {
+  const renderPrefilledAreas = (mapObj: Map = map): boolean[] =>
+    mapObj.areas.map(area => {
       if (!area.preFillColor) return false;
+
       callingFn(
         area.shape,
         scaleCoords(area.coords),
         area.preFillColor,
-        area.lineWidth || lineWidthProp,
-        area.strokeColor || strokeColorProp,
+        area.lineWidth ?? lineWidthProp,
+        area.strokeColor ?? strokeColorProp,
         true,
-        ctx
+        ctx.current
       );
       return true;
     });
-  };
 
-  const computeCenter = (area: MapAreas): [number, number] => {
+  const computeCenter = (area: MapArea): [number, number] => {
     if (!area) return [0, 0];
 
     const scaledCoords = scaleCoords(area.coords);
@@ -273,65 +308,64 @@ const ImageMapper: React.FC<ImageMapperProps> = (props: ImageMapperProps) => {
     }
   };
 
-  const updateCanvas = () => {
+  const updateCanvas = (): void => {
     clearCanvas();
     renderPrefilledAreas(mapProp);
   };
 
-  const renderAreas = () =>
-    map.areas.map((area, index) => {
-      const scaledCoords = scaleCoords(area.coords);
-      const center = computeCenter(area);
-      const extendedArea = { ...area, scaledCoords, center };
+  const renderAreas = (): ReactNode =>
+    map.areas.map((mapArea, index) => {
+      const scaledCoords = scaleCoords(mapArea.coords);
+      const center = computeCenter(mapArea);
+      const area = { ...mapArea, scaledCoords, center };
 
       if (area.disabled) return null;
 
       return (
         <area
           {...(area.preFillColor ? { className: 'img-mapper-area-highlighted' } : {})}
-          key={area[areaKeyName] || index.toString()}
+          key={area[areaKeyName] ?? index.toString()}
           shape={area.shape}
           coords={scaledCoords.join(',')}
-          onMouseEnter={event => hoverOn(extendedArea, index, event)}
-          onMouseLeave={event => hoverOff(extendedArea, index, event)}
-          onMouseMove={event => mouseMove(extendedArea, index, event, props)}
-          onMouseDown={event => mouseDown(extendedArea, index, event, props)}
-          onMouseUp={event => mouseUp(extendedArea, index, event, props)}
-          onTouchStart={event => touchStart(extendedArea, index, event, props)}
-          onTouchEnd={event => touchEnd(extendedArea, index, event, props)}
-          onClick={event => click(extendedArea, index, event)}
+          onMouseEnter={event => void hoverOn({ area, index, event })}
+          onMouseLeave={event => void hoverOff({ area, index, event })}
+          onMouseMove={event => void mouseMove({ area, index, event }, props)}
+          onMouseDown={event => void mouseDown({ area, index, event }, props)}
+          onMouseUp={event => void mouseUp({ area, index, event }, props)}
+          onTouchStart={event => void touchStart({ area, index, event }, props)}
+          onTouchEnd={event => void touchEnd({ area, index, event }, props)}
+          onClick={event => void click({ area, index, event })}
           href={area.href}
           alt="map"
         />
       );
     });
 
+  const cssStyles = styles({ responsive });
+
   return (
-    <div id="img-mapper" style={styles(props).container} ref={container}>
+    <div id="img-mapper" style={cssStyles.container} ref={container}>
       <img
         role="presentation"
         className="img-mapper-img"
-        style={{ ...styles(props).img, ...(!imgRef ? { display: 'none' } : {}) }}
+        style={{ ...cssStyles.img, ...(!imgRef ? { display: 'none' } : {}) }}
         src={srcProp}
         useMap={`#${map.name}`}
         alt="map"
         ref={img}
-        onClick={event => imageClick(event, props)}
-        onMouseMove={event => imageMouseMove(event, props)}
+        onClick={event => void imageClick({ event }, props)}
+        onMouseMove={event => void imageMouseMove({ event }, props)}
       />
-      <canvas className="img-mapper-canvas" ref={canvas} style={styles().canvas} />
-      <map className="img-mapper-map" name={map.name} style={styles().map}>
+      <canvas className="img-mapper-canvas" ref={canvas} style={cssStyles.canvas} />
+      <map className="img-mapper-map" name={map.name}>
         {isRendered && !disabled && imgRef && renderAreas()}
       </map>
     </div>
   );
 };
 
-ImageMapper.defaultProps = ImageMapperDefaultProps;
-
 export default React.memo<ImageMapperProps>(ImageMapper, (prevProps, nextProps) => {
-  const watchedProps = [...rerenderPropsList, ...nextProps.rerenderProps!];
-
+  const watchedProps = [...rerenderPropsList, ...(nextProps.rerenderProps ?? [])];
   const propChanged = watchedProps.some(prop => prevProps[prop] !== nextProps[prop]);
 
   return isEqual(prevProps.map, nextProps.map) && !propChanged;

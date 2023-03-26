@@ -41,7 +41,7 @@ To run the example locally
 ```        
 git clone https://github.com/img-mapper/react-docs.git
 npm install        
-npm start        
+npm run dev        
 ```        
 
 Then open [`localhost:3000`](http://localhost:3000) in a browser.
