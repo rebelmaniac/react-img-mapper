@@ -12,6 +12,7 @@ const URL = 'https://raw.githubusercontent.com/img-mapper/react-docs/master/src/
 
 const Example: React.FC = () => {
   const [areas, setAreas] = useState<MapArea[]>(JSON);
+  const [parentWidth, setParentWidth] = useState<number>(500);
   const ref = useRef<RefProperties>(null);
 
   const handleClick = () => {
@@ -45,7 +46,15 @@ const Example: React.FC = () => {
         stayMultiHighlighted
         toggleHighlighted
         responsive
-        parentWidth={1000}
+        parentWidth={parentWidth}
+      />
+      <input
+        type="range"
+        value={parentWidth}
+        onChange={e => setParentWidth(e.target.valueAsNumber)}
+        min={100}
+        step={100}
+        max={1000}
       />
       <button type="button" onClick={handleClick}>
         Hello

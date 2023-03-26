@@ -80,13 +80,13 @@ const ImageMapper = forwardRef<RefProperties, ImageMapperProps>((props, ref) => 
   const [map, setMap] = useState<Map>(mapProp);
   const [storedMap, setStoredMap] = useState<Map>(map);
   const [isRendered, setRendered] = useState<boolean>(false);
-  const [renderCount, setRenderCount] = useState<number>(1);
   const [imgRef, setImgRef] = useState<HTMLImageElement | null>(null);
   const container = useRef<HTMLDivElement | null>(null);
   const img = useRef<HTMLImageElement | null>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const ctx = useRef<CanvasRenderingContext2D | null>(null);
   const isInitialMount = useRef<boolean>(true);
+  const interval = useRef<number>(0);
 
   const scaleCoords = useCallback(
     (coords: number[]): number[] => {
@@ -303,18 +303,24 @@ const ImageMapper = forwardRef<RefProperties, ImageMapperProps>((props, ref) => 
   }, [mapProp]);
 
   useEffect(() => {
-    if (!isRendered && renderCount) {
-      if (img.current?.complete && canvas.current) {
-        initCanvas(true);
-        ctx.current = canvas.current.getContext('2d');
-        updateCacheMap();
-        setRendered(true);
-        setRenderCount(0);
-      } else {
-        setRenderCount(prev => prev + 1);
-      }
+    if (!isRendered) {
+      interval.current = window.setInterval(() => {
+        if (img.current?.complete) {
+          setRendered(true);
+        }
+      }, 500);
+    } else {
+      clearInterval(interval.current);
     }
-  }, [img, initCanvas, isRendered, renderCount, updateCacheMap]);
+  }, [isRendered]);
+
+  useEffect(() => {
+    if (isRendered && canvas.current) {
+      initCanvas(true);
+      ctx.current = canvas.current.getContext('2d');
+      updateCacheMap();
+    }
+  }, [isRendered, updateCacheMap]);
 
   useEffect(() => {
     if (isInitialMount.current) {
@@ -325,10 +331,6 @@ const ImageMapper = forwardRef<RefProperties, ImageMapperProps>((props, ref) => 
       if (imgRef) updateCanvas();
     }
   }, [isInitialMount, imgRef, updateCacheMap]);
-
-  useEffect(() => {
-    if (responsive) initCanvas();
-  }, [parentWidth, responsive]);
 
   useImperativeHandle(
     ref,
@@ -372,19 +374,19 @@ const ImageMapper = forwardRef<RefProperties, ImageMapperProps>((props, ref) => 
   const cssStyles = styles({ responsive });
 
   return (
-    <div id="img-mapper" style={cssStyles.container} ref={container}>
+    <div ref={container} id="img-mapper" style={cssStyles.container}>
       <img
+        ref={img}
         role="presentation"
         className="img-mapper-img"
         style={{ ...cssStyles.img, ...(!imgRef ? { display: 'none' } : {}) }}
         src={srcProp}
         useMap={`#${map.name}`}
         alt="map"
-        ref={img}
         onClick={event => void imageClick({ event }, props)}
         onMouseMove={event => void imageMouseMove({ event }, props)}
       />
-      <canvas className="img-mapper-canvas" ref={canvas} style={cssStyles.canvas} />
+      <canvas ref={canvas} className="img-mapper-canvas" style={cssStyles.canvas} />
       <map className="img-mapper-map" name={map.name}>
         {isRendered && !disabled && imgRef && renderAreas()}
       </map>
