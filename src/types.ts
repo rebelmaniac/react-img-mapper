@@ -1,10 +1,6 @@
-import type {
-  MutableRefObject,
-  MouseEvent as ReactMouseEvent,
-  TouchEvent as ReactTouchEvent,
-} from 'react';
+import type { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from 'react';
 
-export interface ContainerRef extends HTMLDivElement {
+export interface RefProperties {
   clearHighlightedArea: () => void;
 }
 
@@ -62,7 +58,6 @@ export interface ImageMapperProps {
   src: string;
   map: Map;
   areaKeyName?: 'id';
-  containerRef?: MutableRefObject<ContainerRef | null> | null;
   active?: boolean;
   disabled?: boolean;
   fillColor?: string;

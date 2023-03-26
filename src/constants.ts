@@ -21,7 +21,6 @@ export const rerenderPropsList = [
 
 export const imageMapperDefaultProps: Omit<ImagePropsWithDPrefix, 'DSrc' | 'DMap'> = {
   DAreaKeyName: 'id',
-  DContainerRef: null,
   DActive: true,
   DDisabled: false,
   DFillColor: 'rgba(255, 255, 255, 0.5)',

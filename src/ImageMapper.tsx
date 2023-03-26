@@ -1,4 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 
 import isEqual from 'react-fast-compare';
 
@@ -15,16 +23,14 @@ import {
 } from '@/events';
 import styles from '@/styles';
 
-import type { Area, ContainerRef, EventFC, ImageMapperProps, Map, MapArea } from '@/types';
-import type { FC, ReactNode } from 'react';
+import type { Area, EventFC, ImageMapperProps, Map, MapArea, RefProperties } from '@/types';
+import type { ReactNode } from 'react';
 
 export type * from '@/types';
 
-// eslint-disable-next-line react/function-component-definition
-const ImageMapper: FC<ImageMapperProps> = props => {
+const ImageMapper = forwardRef<RefProperties, ImageMapperProps>((props, ref) => {
   const {
     DAreaKeyName,
-    DContainerRef,
     DActive,
     DDisabled,
     DFillColor,
@@ -50,7 +56,6 @@ const ImageMapper: FC<ImageMapperProps> = props => {
     src: srcProp,
     map: mapProp,
     areaKeyName = DAreaKeyName,
-    containerRef = DContainerRef,
     active = DActive,
     disabled = DDisabled,
     fillColor: fillColorProp = DFillColor,
@@ -77,7 +82,7 @@ const ImageMapper: FC<ImageMapperProps> = props => {
   const [isRendered, setRendered] = useState<boolean>(false);
   const [renderCount, setRenderCount] = useState<number>(1);
   const [imgRef, setImgRef] = useState<HTMLImageElement | null>(null);
-  const container = useRef<ContainerRef | null>(null);
+  const container = useRef<HTMLDivElement | null>(null);
   const img = useRef<HTMLImageElement | null>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const ctx = useRef<CanvasRenderingContext2D | null>(null);
@@ -322,21 +327,19 @@ const ImageMapper: FC<ImageMapperProps> = props => {
   }, [isInitialMount, imgRef, updateCacheMap]);
 
   useEffect(() => {
-    if (!container.current) return;
-
-    container.current.clearHighlightedArea = (): void => {
-      setMap(storedMap);
-      updateCanvas();
-    };
-
-    if (containerRef) {
-      containerRef.current = container.current;
-    }
-  }, [containerRef, imgRef, storedMap]);
-
-  useEffect(() => {
     if (responsive) initCanvas();
   }, [parentWidth, responsive]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      clearHighlightedArea: (): void => {
+        setMap(storedMap);
+        updateCanvas();
+      },
+    }),
+    [storedMap, updateCanvas]
+  );
 
   const renderAreas = (): ReactNode =>
     map.areas.map((mapArea, index) => {
@@ -387,9 +390,11 @@ const ImageMapper: FC<ImageMapperProps> = props => {
       </map>
     </div>
   );
-};
+});
 
-export default React.memo<ImageMapperProps>(ImageMapper, (prevProps, nextProps) => {
+ImageMapper.displayName = 'ImageMapper';
+
+export default memo(ImageMapper, (prevProps, nextProps) => {
   const watchedProps = [...rerenderPropsList, ...(nextProps.rerenderProps ?? [])];
   const propChanged = watchedProps.some(prop => prevProps[prop] !== nextProps[prop]);
 

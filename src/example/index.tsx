@@ -1,9 +1,9 @@
 import React, { useRef, useState } from 'react';
 
-import JSON from './area.json';
-import ImageMapper from '../ImageMapper';
+import JSON from '@/example/area.json';
+import ImageMapper from '@/ImageMapper';
 
-import type { ContainerRef, MapArea } from '../ImageMapper';
+import type { MapArea, RefProperties } from '@/ImageMapper';
 
 const URL = 'https://raw.githubusercontent.com/img-mapper/react-docs/master/src/assets/example.jpg';
 
@@ -12,7 +12,7 @@ const URL = 'https://raw.githubusercontent.com/img-mapper/react-docs/master/src/
 
 const Example: React.FC = () => {
   const [areas, setAreas] = useState<MapArea[]>(JSON);
-  const ref = useRef<ContainerRef>(null);
+  const ref = useRef<RefProperties>(null);
 
   const handleClick = () => {
     const area = areas.map((cur: MapArea, i: number) => {
@@ -32,7 +32,7 @@ const Example: React.FC = () => {
     <>
       <ImageMapper
         src={URL}
-        containerRef={ref}
+        ref={ref}
         map={{
           name: 'my-map',
           areas,
