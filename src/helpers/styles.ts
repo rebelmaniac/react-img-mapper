@@ -7,6 +7,12 @@ const absPos: CSSProperties = {
   left: 0,
 };
 
+const relPos: CSSProperties = {
+  position: 'relative',
+  top: 0,
+  left: 0,
+};
+
 const imgNonResponsive: CSSProperties = {
   ...absPos,
   zIndex: 1,
@@ -24,7 +30,7 @@ const styles: StylesProps = {
     position: 'relative',
   },
   canvas: {
-    ...absPos,
+    ...relPos,
     pointerEvents: 'none',
     zIndex: 2,
   },
